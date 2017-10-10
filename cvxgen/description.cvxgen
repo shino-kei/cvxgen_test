@@ -1,0 +1,47 @@
+# Produced by CVXGEN, 2017-09-29 03:20:58 -0400.
+# CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
+# The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
+# CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial
+# applications without prior written permission from Jacob Mattingley.
+
+# Filename: description.cvxgen.
+# Description: A description of the CVXGEN problem.
+
+dimensions
+  m = 1  # inputs.
+  n = 3  # states.
+  n_o = 1 # output
+  T = 10  # horizon.
+end
+
+parameters
+  A (n,n)  # dynamics matrix.
+  B (n,m)  # transfer matrix.
+  C (n_o,n) # sensor matrix
+
+  #   Q (n,n) psd  # state cost.
+  #   Q_final (n,n) psd  # final state cost.
+  q (n_o,n_o) psd
+  q_final (n_o,n_o) psd
+  R (m,m) psd  # input cost.
+  x[0] (n)  # initial state.
+  y[0] (n_o)
+  r[t] (n_o), t=0..T+1
+  u_max nonnegative  # amplitude limit.
+  S nonnegative  # slew rate limit.
+end
+
+variables
+  x[t] (n), t=1..T+1  # state.
+  y[t] (n_o), t=1..T+1 # outputs
+  u[t] (m), t=0..T  # input.
+end
+
+minimize
+  sum[t=0..T]( quad(y[t]-r[t], q) + quad(u[t], R)) + quad(y[T+1]-r[T+1], q_final)
+subject to
+  x[t+1] == A*x[t] + B*u[t], t=0..T  # dynamics constraints.
+  y[t+1] == C*x[t+1], t=0..T
+  abs(u[t]) <= u_max, t=0..T  # maximum input box constraint.
+  # norminf(u[t+1] - u[t]) <= S, t=0..T-1  # slew rate constraint.
+end
